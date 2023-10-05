@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt=require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const authenticate=require('../middleware/authenticate')
+const authenticate = require('../middleware/authenticate')
 
 require('../db/conn');
 const User = require('../model/userSchema');
@@ -31,20 +31,19 @@ router.get('/', (req, res) => {
 
 //using async and awwait
 router.post('/register', async (req, res) => {
-    const { name, email, phone, work,password, cpassword } = req.body;
-    if (!name || !email || !phone ||!work || !password || !cpassword) {
+    const { name, email, phone, work, password, cpassword } = req.body;
+    if (!name || !email || !phone || !work || !password || !cpassword) {
         return res.status(422).json({ error: "empty feild" })
     }
 
     try {
-
         const userExists = await User.findOne({ email: email });
         if (userExists) {
             return res.status(422).json({ error: 'Email already exist' });
         } else if (password != cpassword) {
-            return res.status(422).json({ error: 'Email already exist' });
+            return res.status(422).json({ error: 'Password not matching' });
         } else {
-            const user = new User({ name: name, email: email, phone: phone,work:work, password: password, cpassword: cpassword });
+            const user = new User({ name: name, email: email, phone: phone, work: work, password: password, cpassword: cpassword });
 
             const userreg = await user.save();
             if (userreg) {
@@ -70,38 +69,82 @@ router.post('/login', async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ error: "please fill the data" })
         }
-        const userLogin = await User.findOne({ email:email });
+        const userLogin = await User.findOne({ email: email });
 
         // console.log(userLogin)
-        if(userLogin){
-            const ismatch=await bcrypt.compare(password,userLogin.password);
-            token=await userLogin.generateAuthToken();
+        if (userLogin) {
+            const ismatch = await bcrypt.compare(password, userLogin.password);
+            token = await userLogin.generateAuthToken();
             console.log(token);
-            res.cookie("jwtoken",token,{
-                expires:new Date(Date.now()+25892000000),
-                httpOnly:true
+            res.cookie("jwtoken", token, {
+                expires: new Date(Date.now() + 25892000000),
+                httpOnly: true
             })
-        if (!ismatch) {
-            res.status(400).json({ message: 'Invalid Credentialp' });
+            if (!ismatch) {
+                res.status(400).json({ message: 'Invalid Credentials' });
+            } else {
+                res.json({ message: 'login successful' });
+            }
         } else {
-            res.json({ message: 'login successful' });
-        }
-        }else{
             res.status(400).json({ message: 'Invalid Credentials' });
         }
     } catch (err) {
         console.log(err);
     }
 })
+//forgor password
+router.post('/fgtps', async (req, res) => {
+    const { email, password, cpassword } = req.body;
+    if (!email || !password || !cpassword) {
+        return res.status(422).json({ error: "empty feild" })
+    }
+    try {
+        const userExists = await User.findOne({ email: email });
+        if (!userExists) {
+            return res.status(422).json('user does not exists')
+        }else{
+            bcrypt.hash(password, 10, async (hashError, hashedPassword) => {
+                if (hashError) {
+                  return res.status(500).json({ error: 'Password hashing error' });
+                }
+      
+                try {
+                  // Update both password and cpassword fields with the hashed password
+                  const userUp = await User.updateOne(
+                    { email: email },
+                    { $set: { password: hashedPassword, cpassword: cpassword } }
+                  );
+      
+                  if (userUp) {
+                    return res.status(200).json({ message: 'Passwords updated successfully' });
+                  } else {
+                    return res.status(500).json({ error: 'Failed to update passwords' });
+                  }
+                } catch (updateError) {
+                  console.log(updateError);
+                  return res.status(500).json({ error: 'Internal server error' });
+                }
+              });
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+
+})
+
 //
-router.get('/about',authenticate,(req,res)=>{
+router.get('/about', authenticate, (req, res) => {
     res.send(req.rootUser);
 })
+
 //logout
-router.get('/logout',authenticate,(req,res)=>{
-    res.clearCookie(('jwtoken'))
-    console.log("cookie clear");
-    res.status(200).send('user logout');
+router.get('/logout', authenticate, (req, res) => {
+    if (res.clearCookie(('jwtoken'))) {
+        console.log("cookie clear");
+        res.status(200).send('user logout');
+    }
+
 })
 module.exports = router;
 

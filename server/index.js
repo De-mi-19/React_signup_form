@@ -25,12 +25,12 @@ app.get('/',(req,res)=>{
     res.send('home');
 })
 
-app.get('/register',(req,res)=>{
-    res.send('home');
-})
-app.get('/login',(req,res)=>{
-    res.send('home');
-})
+// app.get('/register',(req,res)=>{
+//     res.send('home');
+// })
+// app.get('/login',(req,res)=>{
+//     res.send('home');
+// })
 
 app.listen(process.env.PORT,()=>{
     console.log(`server running at ${process.env.PORT}`);

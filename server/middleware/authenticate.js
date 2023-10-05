@@ -16,6 +16,5 @@ const Authenticate=async(req,res,next)=>{
         res.status(401).send("unauthorized:No Token Provided");
         console.log(err)
     }
-
 }
 module.exports=Authenticate

@@ -44,6 +44,13 @@ userSchema.pre('save', async function (next) {
     }
     next();
 })
+// userSchema.pre('updateOne', { document: true, query: false }, async function (next) {
+//     if (this.isModified('password')) {
+//         this.password = await bcrypt.hash(this.password, 12);
+//         // this.cpassword = await bcrypt.hash(this.cpassword, 12);
+//     }
+//     next();
+// })
 //generate json web token
 userSchema.methods.generateAuthToken = async function () {
     try {
@@ -54,4 +61,5 @@ userSchema.methods.generateAuthToken = async function () {
     } catch (e) { }
 }
 const User = mongoose.model('USER', userSchema);
+
 module.exports = User;
